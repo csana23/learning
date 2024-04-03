@@ -1,7 +1,9 @@
 import requests
 
+open_ai_api_key = ""
+
 API_URL = "https://api-inference.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta"
-headers = {"Authorization": "Bearer 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"}
+headers = {"Authorization": "Bearer"+open_ai_api_key}
 
 def query(payload):
 	response = requests.post(API_URL, headers=headers, json=payload)
