@@ -1,5 +1,6 @@
 import pandas as pd
 import os
+import shutil
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
 def get_xlsx_files(folder_path) -> list:
@@ -13,6 +14,13 @@ def read_excel_to_dataframe(file_path: str, sheet_name: str = None, usecols: lis
     except FileNotFoundError:
         print(f"Error: File '{file_path}' not found.")
         return None
+
+def copy_excel_file(source_path, destination_path):
+    try:
+        shutil.copy(source_path, destination_path)
+        return f"Excel file copied from '{source_path}' to '{destination_path}' successfully."
+    except Exception as e:
+        return f"Error: {str(e)}"
 
 tokenizer = AutoTokenizer.from_pretrained("facebook/nllb-200-distilled-600M", src_lang="hun_Latn")
 model = AutoModelForSeq2SeqLM.from_pretrained("facebook/nllb-200-distilled-600M")
@@ -55,7 +63,7 @@ def run_translater_on_folder(folder_path: str):
             # write result to new Translated_* sheet
             try:
                 with pd.ExcelWriter(excel_file, engine='openpyxl', mode='a') as writer:
-                    translated_df.to_excel(writer, sheet_name=translated_sheet, index=False)
+                    translated_df.to_excel(writer, sheet_name=translated_sheet, index=False, header=False)
                     print("Data written to sheet '{translated_sheet}' in '{excel_file}' successfully.")
             except Exception as e:
                 print("Error: {str(e)}")
