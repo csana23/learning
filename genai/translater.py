@@ -1,6 +1,7 @@
 import pandas as pd
 import os
 import shutil
+from openpyxl import load_workbook
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
 def get_xlsx_files(folder_path) -> list:
@@ -21,22 +22,53 @@ def copy_excel_file(source_path, destination_path):
         return f"Excel file copied from '{source_path}' to '{destination_path}' successfully."
     except Exception as e:
         return f"Error: {str(e)}"
+    
+def duplicate_sheet(input_file_path, sheet_name, output_file_path, new_sheet_name):
+    try:
+        # Load the workbook
+        wb = load_workbook(input_file_path)
+
+        # Get the original sheet
+        original_sheet = wb[sheet_name]
+
+        # check if Translated_* version exists
+        if new_sheet_name in wb.sheetnames:
+            wb.remove(worksheet=wb[new_sheet_name])
+        
+        # Create a new sheet by copying the original
+        new_sheet = wb.copy_worksheet(original_sheet)
+        new_sheet.title = new_sheet_name
+        
+        # Save the modified workbook
+        wb.save(output_file_path)
+        print(f"Sheet '{sheet_name}' duplicated as '{new_sheet_name}' in '{output_file_path}'.")
+
+    except Exception as e:
+            print(f"Error: {e}")
+        
 
 tokenizer = AutoTokenizer.from_pretrained("facebook/nllb-200-distilled-600M", src_lang="hun_Latn")
 model = AutoModelForSeq2SeqLM.from_pretrained("facebook/nllb-200-distilled-600M")
 
-def translate(df: pd.DataFrame, column_name: str):
+def translate(df: pd.DataFrame = None, column_name: str = None):
     translated_texts = []
 
-    for text in df[column_name]:
-        model_inputs = tokenizer(str(text), return_tensors="pt")
+    # working on singular text - in this case: column name of dataframe
+    if df is None and column_name is not None:
+        model_inputs = tokenizer(str(column_name), return_tensors="pt")
         gen_tokens = model.generate(**model_inputs, forced_bos_token_id=tokenizer.lang_code_to_id["eng_Latn"])
         translated_text = tokenizer.batch_decode(gen_tokens, skip_special_tokens=True)
-        translated_texts.append(translated_text)
+        return translated_text
+    # working on dataframe
+    else:
+        for text in df[column_name]:
+            model_inputs = tokenizer(str(text), return_tensors="pt")
+            gen_tokens = model.generate(**model_inputs, forced_bos_token_id=tokenizer.lang_code_to_id["eng_Latn"])
+            translated_text = tokenizer.batch_decode(gen_tokens, skip_special_tokens=True)
+            translated_texts.append(translated_text)
 
-    df['translated_' + column_name] = translated_texts
-
-    return df
+        df['translated_' + column_name] = translated_texts
+        return df
 
 def run_translater_on_folder(folder_path: str):
     # get all excel files inside folder
@@ -50,94 +82,43 @@ def run_translater_on_folder(folder_path: str):
 
         # go through all sheets
         for sheet in sheet_names:
-            print('Working on', str(excel_file), ', sheet:', str(sheet))
-            df = df_dict[sheet]
-            
-            # get column name
-            column_name = df.columns[0]
+            # only check original sheets, not Translated_* ones
+            if 'Translated_' not in str(sheet):
+                print('Working on', str(excel_file), ', sheet:', str(sheet))
 
-            # inference model
-            translated_df = translate(df=df, column_name=column_name)
-            translated_sheet = 'Translated_' + str(sheet)
+                # copy sheet with content, formatting and adding Translated_ prefix
+                new_sheet_name = 'Translated_' + str(sheet)
+                duplicate_sheet(
+                    input_file_path=excel_file, 
+                    sheet_name=str(sheet), 
+                    output_file_path=excel_file,
+                    new_sheet_name=new_sheet_name
+                    )
 
-            # write result to new Translated_* sheet
-            try:
-                with pd.ExcelWriter(excel_file, engine='openpyxl', mode='a') as writer:
-                    translated_df.to_excel(writer, sheet_name=translated_sheet, index=False, header=False)
-                    print("Data written to sheet '{translated_sheet}' in '{excel_file}' successfully.")
-            except Exception as e:
-                print("Error: {str(e)}")
+                df = df_dict[sheet]
+                
+                # get column name
+                column_name = df.columns[0]
+
+                # inference model
+                translated_df = translate(df=df, column_name=column_name)
+
+                # rename original column with translated version
+                original_translated_column_name = 'translated_' + column_name
+                new_translated_column_name = translate(column_name=column_name)
+                translated_df.rename(columns={original_translated_column_name: new_translated_column_name})
+
+                # drop original (not-translated) column
+                translated_df.drop([column_name], axis=1)
+
+                # write result to new Translated_* sheet
+                try:
+                    with pd.ExcelWriter(excel_file, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
+                        translated_df.to_excel(writer, sheet_name=new_sheet_name, index=False, header=True)
+                        print(f"Data written to sheet '{new_sheet_name}' in '{excel_file}' successfully.")
+                except Exception as e:
+                    print(f"Error: {e}")
             
 # run the whole thing
 folder_path = "C:\\Users\\richa\\Source\\Repos\\learning\\genai\\"
 run_translater_on_folder(folder_path=folder_path)
-
-
-
-
-
-
-# inference
-'''
-folder_path = "C:\\Users\\richa\\Source\\Repos\\learning\\genai\\text.xlsx"
-sheet_name = "Sheet1"
-usecols = ["hun"]
-
-df = translate(
-        read_excel_to_dataframe(file_path=file_path, sheet_name=sheet_name, usecols=usecols),
-        column_name="hun"
-    )
-
-print(df)
-'''
-
-
-
-
-'''
-# tokenizer = NllbTokenizer.from_pretrained("facebook/nllb-200-distilled-600M", source_language="hun_Latn")
-def translate_1(text: str, source_language: str, target_language: str):
-    text_to_translate = "Life is like a box of chocolates"
-    model_inputs = tokenizer(text_to_translate, return_tensors="pt")
-
-    # translate to French
-    gen_tokens = model.generate(**model_inputs, forced_bos_token_id=tokenizer.convert_tokens_to_ids("fr_Latn"))
-    translated_text = tokenizer.batch_decode(gen_tokens, skip_special_tokens=True)
-
-    return translated_text
-
-def translate_3() -> str:
-    src_lang = "hun_Latn"  # Language code for Hungarian
-    tgt_lang = "eng_Latn"  # Language code for English
-
-    text_to_translate = "Ez egy mondat."
-
-    # Load the NLLB-200 Distilled 600M model
-    translator = ctranslate2.Translator("facebook/nllb-200-distilled-600M", device="cuda")
-
-    # Tokenize the input text
-    source = tokenizer.convert_ids_to_tokens(tokenizer.encode(text_to_translate))
-
-    # Translate
-    target_prefix = [tgt_lang]
-    results = translator.translate_batch([source], target_prefix=[target_prefix])
-    translated_text = tokenizer.decode(tokenizer.convert_tokens_to_ids(results.hypotheses[0]))
-
-    return translated_text
-
-def translate_4(text_to_translate: str):
-    model_inputs = tokenizer(text_to_translate, return_tensors="pt")
-
-    # translate to English
-    # gen_tokens = model.generate(**model_inputs, forced_bos_token_id=tokenizer.convert_tokens_to_ids("eng_Latn"))
-    gen_tokens = model.generate(**model_inputs, forced_bos_token_id=tokenizer.lang_code_to_id["eng_Latn"])
-    translated_text = tokenizer.batch_decode(gen_tokens, skip_special_tokens=True)
-
-    return translated_text
-
-# df = read_excel_to_dataframe(file_path=file_path, sheet_name=sheet_name, usecols=usecols)
-# print(df)
-
-# translated = translate(text=text, source_language=source_language, target_language=target_language)
-# print(translate_2())
-'''
