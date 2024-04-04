@@ -1,11 +1,12 @@
 import pandas as pd
+from pandas.io.formats import excel
 import os
 import shutil
 from openpyxl import load_workbook
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
 def get_xlsx_files(folder_path) -> list:
-    xlsx_files = [file for file in os.listdir(folder_path) if file.lower().endswith('.xlsx')]
+    xlsx_files = [os.path.join(folder_path, file) for file in os.listdir(folder_path) if file.lower().endswith('.xlsx')]
     return xlsx_files
 
 def read_excel_to_dataframe(file_path: str, sheet_name: str = None, usecols: list = None) -> pd.DataFrame:
@@ -71,6 +72,8 @@ def translate(df: pd.DataFrame = None, column_name: str = None):
         return df
 
 def run_translater_on_folder(folder_path: str):
+    # set dataframe header style
+    excel.ExcelFormatter.header_style = None
     # get all excel files inside folder
     excel_files = get_xlsx_files(folder_path=folder_path)
 
@@ -105,16 +108,19 @@ def run_translater_on_folder(folder_path: str):
 
                 # rename original column with translated version
                 original_translated_column_name = 'translated_' + column_name
-                new_translated_column_name = translate(column_name=column_name)
-                translated_df.rename(columns={original_translated_column_name: new_translated_column_name})
+                new_translated_column_name = translate(column_name=column_name)[0]
+                translated_df = translated_df.rename(columns={original_translated_column_name: new_translated_column_name})
 
                 # drop original (not-translated) column
-                translated_df.drop([column_name], axis=1)
+                translated_df = translated_df.drop([str(column_name)], axis=1)
+
+                # extract string values from generated translation
+                translated_df[new_translated_column_name] = translated_df[new_translated_column_name].str.get(0)
 
                 # write result to new Translated_* sheet
                 try:
-                    with pd.ExcelWriter(excel_file, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
-                        translated_df.to_excel(writer, sheet_name=new_sheet_name, index=False, header=True)
+                    with pd.ExcelWriter(excel_file, engine='openpyxl', mode='a', if_sheet_exists='overlay') as writer:
+                        translated_df.to_excel(writer, sheet_name=new_sheet_name, index=False)
                         print(f"Data written to sheet '{new_sheet_name}' in '{excel_file}' successfully.")
                 except Exception as e:
                     print(f"Error: {e}")
