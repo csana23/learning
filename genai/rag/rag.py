@@ -2,7 +2,8 @@ import argparse
 from dataclasses import dataclass
 from langchain.vectorstores.chroma import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
-from transformers import AutoModelForCausalLM
+from langchain_community.llms.huggingface_pipeline import HuggingFacePipeline
+from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 from langchain.prompts import ChatPromptTemplate
 
 CHROMA_PATH = "chroma"
@@ -17,7 +18,6 @@ Answer the question based only on the following context:
 Answer the question based on the above context: {question}
 """
 
-
 def main():
     # Create CLI.
     parser = argparse.ArgumentParser()
@@ -31,21 +31,40 @@ def main():
 
     # Search the DB.
     results = db.similarity_search_with_relevance_scores(query_text, k=3)
-    if len(results) == 0 or results[0][1] < 0.7:
-        print(f"Unable to find matching results.")
-        return
+    # if len(results) == 0 or results[0][1] < 0.7:
+    #     print(f"Unable to find matching results.")
+    #     return
 
     context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
     prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
     prompt = prompt_template.format(context=context_text, question=query_text)
     print(prompt)
 
-    model = AutoModelForCausalLM.from_pretrained(
-            "stabilityai/stablelm-3b-4e1t"
-        )
+    tokenizer = AutoTokenizer.from_pretrained("stabilityai/stablelm-3b-4e1t")
+    model = AutoModelForCausalLM.from_pretrained("stabilityai/stablelm-3b-4e1t")
+
+    '''
+    pipe = pipeline(
+        "text-generation",
+        model=model,
+        tokenizer=tokenizer,
+        max_new_tokens=50
+    )
+
+    hf = HuggingFacePipeline(pipeline=pipe)
+    '''
+
+    gpu_llm = HuggingFacePipeline.from_model_id(
+        model_id="stabilityai/stablelm-3b-4e1t",
+        task="text-generation",
+        device=0,  # replace with device_map="auto" to use the accelerate library.
+        pipeline_kwargs={"max_new_tokens": 100},
+    ) 
+
+    chain = prompt_template | gpu_llm
     
     # inference model
-    # response_text = model.predict(prompt)
+    response_text = chain.invoke({"question": query_text, "context": context_text})
 
 
     sources = [doc.metadata.get("source", None) for doc, _score in results]
