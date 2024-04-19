@@ -1,0 +1,15 @@
+artifact_uri: file:///c:/Users/richa/Source/Repos/learning/random/mlruns/0/facd6707a4df4862a0abcc15aac60d3a/artifacts
+end_time: 1713559186665
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: facd6707a4df4862a0abcc15aac60d3a
+run_name: debonair-roo-375
+run_uuid: facd6707a4df4862a0abcc15aac60d3a
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1713559172872
+status: 3
+tags: []
+user_id: richa
