@@ -1,0 +1,15 @@
+artifact_uri: file:///c:/Users/richa/Source/Repos/learning/algo_practice/mlruns/0/efed88efaee047faa67648630586b7a2/artifacts
+end_time: 1713962078037
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: efed88efaee047faa67648630586b7a2
+run_name: resilient-crow-361
+run_uuid: efed88efaee047faa67648630586b7a2
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1713962066701
+status: 3
+tags: []
+user_id: richa
