@@ -1,0 +1,20 @@
+artifact_path: logictic_model_2024_04_24_15_43_00
+flavors:
+  python_function:
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.sklearn
+    model_path: model.pkl
+    predict_fn: predict
+    python_version: 3.11.8
+  sklearn:
+    code: null
+    pickled_model: model.pkl
+    serialization_format: cloudpickle
+    sklearn_version: 1.4.1.post1
+mlflow_version: 2.11.3
+model_size_bytes: 713
+model_uuid: b942ce6e811445409d09170189eed0c7
+run_id: 5ce78c57f18b4ce4b4175668cdfac915
+utc_time_created: '2024-04-24 13:43:00.247463'
