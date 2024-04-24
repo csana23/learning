@@ -1,0 +1,15 @@
+artifact_uri: file:///c:/Users/richa/Source/Repos/learning/algo_practice/mlruns/0/c25dd3536bd84f9ab0b67f321cb5be7b/artifacts
+end_time: 1713982735352
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: c25dd3536bd84f9ab0b67f321cb5be7b
+run_name: legendary-roo-704
+run_uuid: c25dd3536bd84f9ab0b67f321cb5be7b
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1713982722667
+status: 3
+tags: []
+user_id: richa
