@@ -2,3 +2,4 @@ genai/rag/data/The_Art_of_War.txt
 genai/rag/chroma
 medical_insurance.csv
 learning_env/
+.env
