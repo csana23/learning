@@ -9,7 +9,7 @@ model = Llama.from_pretrained(
     repo_id="microsoft/Phi-3-mini-4k-instruct-gguf",
     filename="Phi-3-mini-4k-instruct-q4.gguf",
     n_gpu_layers=-1,
-    verbose=True,
+    verbose=False,
 )
 
 while True:
