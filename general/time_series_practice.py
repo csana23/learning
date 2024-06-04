@@ -100,3 +100,40 @@ def add_lags(df):
 df = add_lags(df)
 print("Adding lags:\n", df.tail())
 
+fold = 0
+preds = []
+scores = []
+
+for train_idx, val_idx in tss.split(df):
+    train = df.iloc[train_idx]
+    test = df.iloc[val_idx]
+
+    train = create_features(train)
+    test = create_features(test)
+
+    FEATURES = ['quarter', 'month','year','lag1','lag2','lag3']
+    TARGET = 'SearchAmount'
+
+    X_train = train[FEATURES]
+    y_train = train[TARGET]
+
+    X_test = test[FEATURES]
+    y_test = test[TARGET]
+
+    reg = xgb.XGBRegressor(base_score=0.5, booster='gbtree',    
+                           n_estimators=1000,
+                           early_stopping_rounds=50,
+                           objective='reg:linear',
+                           max_depth=3,
+                           learning_rate=0.01)
+    reg.fit(X_train, y_train,
+            eval_set=[(X_train, y_train), (X_test, y_test)],
+            verbose=100)
+
+    y_pred = reg.predict(X_test)
+    preds.append(y_pred)
+    score = np.sqrt(mean_squared_error(y_test, y_pred))
+    scores.append(score)
+
+print(f'Score across folds {np.mean(scores):0.4f}')
+print(f'Fold scores:{scores}')
