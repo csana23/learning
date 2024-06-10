@@ -32,7 +32,7 @@ def find_sentences(input_letters: str, all_words: set) -> list:
 
 
 
-input_letters = "aha"
+input_letters = "helpisnowhere"
 all_words = get_all_words()
 
 print(
